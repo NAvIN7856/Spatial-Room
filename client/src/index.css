@@ -1,0 +1,207 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  
+  body {
+    background-color: #09090b;
+    color: #f8fafc;
+    font-family: var(--font-sans);
+    overflow-x: hidden;
+    overflow-y: auto;
+    letter-spacing: -0.011em;
+  }
+
+  /* Lock scrolling in room mode to prevent white border artifacts */
+  body.room-mode {
+    overflow: hidden;
+    height: 100vh;
+  }
+}
+
+/* Linear-style Grid Overlay background */
+.grid-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: -5;
+  background-size: 36px 36px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+  pointer-events: none;
+}
+
+.ambient-mask {
+  position: fixed;
+  inset: 0;
+  z-index: -4;
+  background: radial-gradient(circle at 50% -20%, rgba(99, 102, 241, 0.15) 0%, rgba(9, 9, 11, 0) 65%);
+  pointer-events: none;
+}
+
+/* Glassmorphism clean Linear style elements */
+.premium-card {
+  background: rgba(22, 22, 26, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.4);
+}
+
+.premium-border {
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+/* Inputs styled like Linear and Raycast */
+.premium-input {
+  background: rgba(15, 15, 20, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: #f8fafc;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  font-size: 0.875rem;
+}
+
+.premium-input:focus {
+  border-color: rgba(99, 102, 241, 0.6);
+  background: rgba(20, 20, 28, 0.8);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+  outline: none;
+}
+
+/* Custom scrollbars inspired by Linear sidebars */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* Custom subtle animation loops */
+@keyframes float-gentle {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+.float-gentle {
+  animation: float-gentle 6s ease-in-out infinite;
+}
+
+/* Interactive subtle speaking indicators */
+@keyframes voice-wave {
+  0%, 100% {
+    transform: scale(0.95);
+    opacity: 0.2;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+}
+
+.voice-indicator-ring {
+  animation: voice-wave 2s infinite ease-in-out;
+}
+
+#root {
+  all: unset;
+  display: block;
+  min-height: 100vh;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Range input styling for volume control */
+input[type='range'] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 3px;
+  border-radius: 9999px;
+  background: rgba(255,255,255,0.1);
+  outline: none;
+}
+
+input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #6366f1;
+  cursor: pointer;
+  border: 2px solid rgba(99,102,241,0.4);
+  transition: transform 0.15s ease;
+}
+
+input[type='range']::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Hide scrollbar while keeping scroll functionality (toolbar overflow) */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Popover panel shared styles */
+.popover-panel {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  background: #18181b;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px;
+  padding: 12px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.4);
+}
+
+.popover-label {
+  display: block;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: #52525b;
+  margin-bottom: 8px;
+}
+
+/* Responsive: ensure minimum touch target sizes on mobile */
+@media (max-width: 640px) {
+  button {
+    min-height: 36px;
+    min-width: 36px;
+  }
+
+  .popover-panel {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: calc(100vw - 32px);
+    max-width: 320px;
+  }
+}

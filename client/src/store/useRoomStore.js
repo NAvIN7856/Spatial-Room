@@ -2,6 +2,9 @@ import { create } from "zustand";
 import { io } from "socket.io-client";
 import { spatialAudioEngine } from "../audio/spatialAudioEngine";
 
+const API_URL = import.meta.env.VITE_API_URL || "https://spatial-room.onrender.com";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://spatial-room.onrender.com";
+
 const preferStereoOpus = (sdp) => {
   let lines = sdp.split("\r\n");
   let opusPayload = null;
@@ -59,7 +62,7 @@ export const useRoomStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/rooms`,
+        `${API_URL}/api/rooms`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -79,7 +82,7 @@ export const useRoomStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/rooms`,
+        `${API_URL}/api/rooms`,
         {
           method: "POST",
           headers: {
@@ -107,7 +110,7 @@ export const useRoomStore = create((set, get) => ({
   deleteRoom: async (roomId, token) => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/rooms/${roomId}`,
+        `${API_URL}/api/rooms/${roomId}`,
         {
           method: "DELETE",
           headers: {
@@ -132,7 +135,7 @@ export const useRoomStore = create((set, get) => ({
   verifyPassword: async (roomId, password, token) => {
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/rooms/${roomId}/verify`,
+        `${API_URL}/api/rooms/${roomId}/verify`,
         {
           method: "POST",
           headers: {
@@ -286,7 +289,7 @@ export const useRoomStore = create((set, get) => ({
     const existingSocket = get().socket;
     if (existingSocket && existingSocket.connected) return;
 
-    const socket = io(import.meta.env.VITE_SOCKET_URL, {
+    const socket = io(SOCKET_URL, {
       auth: { token },
       transports: ["websocket"],
       autoConnect: true,

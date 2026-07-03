@@ -1,5 +1,7 @@
 import { create } from "zustand";
 
+const API_URL = import.meta.env.VITE_API_URL || "https://spatial-room.onrender.com";
+
 export const useAuthStore = create((set, get) => ({
   user: null,
   token: localStorage.getItem("token") || null,
@@ -10,7 +12,7 @@ export const useAuthStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/auth/login`,
+        `${API_URL}/api/auth/login`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -37,7 +39,7 @@ export const useAuthStore = create((set, get) => ({
     set({ loading: true, error: null });
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/auth/register`,
+        `${API_URL}/api/auth/register`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -72,7 +74,7 @@ export const useAuthStore = create((set, get) => ({
     set({ loading: true });
     try {
       const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/auth/profile`,
+        `${API_URL}/api/auth/profile`,
         {
           headers: {
             Authorization: `Bearer ${token}`,

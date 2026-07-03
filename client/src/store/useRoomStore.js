@@ -1,13 +1,13 @@
-import { create } from 'zustand';
-import { io } from 'socket.io-client';
-import { spatialAudioEngine } from '../audio/spatialAudioEngine';
+import { create } from "zustand";
+import { io } from "socket.io-client";
+import { spatialAudioEngine } from "../audio/spatialAudioEngine";
 
 const preferStereoOpus = (sdp) => {
-  let lines = sdp.split('\r\n');
+  let lines = sdp.split("\r\n");
   let opusPayload = null;
 
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].includes('opus/48000')) {
+    if (lines[i].includes("opus/48000")) {
       const match = lines[i].match(/a=rtpmap:(\d+)\s+opus\/48000/);
       if (match) {
         opusPayload = match[1];
@@ -19,15 +19,16 @@ const preferStereoOpus = (sdp) => {
   if (opusPayload) {
     for (let i = 0; i < lines.length; i++) {
       if (lines[i].startsWith(`a=fmtp:${opusPayload}`)) {
-        if (!lines[i].includes('stereo=1')) {
-          lines[i] = lines[i] + ';stereo=1;sprop-stereo=1;maxaveragebitrate=128000';
+        if (!lines[i].includes("stereo=1")) {
+          lines[i] =
+            lines[i] + ";stereo=1;sprop-stereo=1;maxaveragebitrate=128000";
         }
         break;
       }
     }
   }
 
-  return lines.join('\r\n');
+  return lines.join("\r\n");
 };
 
 export const useRoomStore = create((set, get) => ({
@@ -42,7 +43,7 @@ export const useRoomStore = create((set, get) => ({
   // WebRTC-specific states
   localStream: null,
   peerConnections: {}, // socketId -> RTCPeerConnection
-  remoteStreams: {},    // socketId -> MediaStream
+  remoteStreams: {}, // socketId -> MediaStream
 
   // Screen Sharing states
   localScreenStream: null,
@@ -57,13 +58,17 @@ export const useRoomStore = create((set, get) => ({
   fetchRooms: async (token) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('/api/rooms', {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/rooms`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to fetch rooms');
+      if (!response.ok)
+        throw new Error(data.message || "Failed to fetch rooms");
       set({ rooms: data, loading: false });
     } catch (error) {
       set({ error: error.message, loading: false });
@@ -73,17 +78,21 @@ export const useRoomStore = create((set, get) => ({
   createRoom: async (roomData, token) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('/api/rooms', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/rooms`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(roomData),
         },
-        body: JSON.stringify(roomData),
-      });
+      );
       const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to create room');
-      
+      if (!response.ok)
+        throw new Error(data.message || "Failed to create room");
+
       set((state) => ({
         rooms: [...state.rooms, data],
         loading: false,
@@ -97,15 +106,18 @@ export const useRoomStore = create((set, get) => ({
 
   deleteRoom: async (roomId, token) => {
     try {
-      const response = await fetch(`/api/rooms/${roomId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/rooms/${roomId}`,
+        {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.message || 'Failed to delete room');
+        throw new Error(data.message || "Failed to delete room");
       }
       set((state) => ({
         rooms: state.rooms.filter((r) => r._id !== roomId),
@@ -119,14 +131,17 @@ export const useRoomStore = create((set, get) => ({
 
   verifyPassword: async (roomId, password, token) => {
     try {
-      const response = await fetch(`/api/rooms/${roomId}/verify`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/rooms/${roomId}/verify`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ password }),
         },
-        body: JSON.stringify({ password }),
-      });
+      );
       const data = await response.json();
       return response.ok && data.success;
     } catch (error) {
@@ -141,14 +156,14 @@ export const useRoomStore = create((set, get) => ({
     if (get().localStream) return get().localStream;
 
     try {
-      console.log('Requesting local microphone stream...');
+      console.log("Requesting local microphone stream...");
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
           sampleRate: { ideal: 48000 },
-          channelCount: { ideal: 1 },   // Mono is cleaner for voice + spatial audio
+          channelCount: { ideal: 1 }, // Mono is cleaner for voice + spatial audio
           latency: { ideal: 0.01 },
           suppressLocalAudioPlayback: true,
         },
@@ -156,16 +171,16 @@ export const useRoomStore = create((set, get) => ({
       });
 
       // Initially mute the local stream tracks
-      stream.getAudioTracks().forEach(track => {
+      stream.getAudioTracks().forEach((track) => {
         track.enabled = false;
       });
 
       set({ localStream: stream });
-      console.log('Local stream initialized successfully');
+      console.log("Local stream initialized successfully");
       return stream;
     } catch (err) {
-      console.error('Failed to get local stream:', err.message);
-      set({ error: 'Failed to access microphone' });
+      console.error("Failed to get local stream:", err.message);
+      set({ error: "Failed to access microphone" });
       return null;
     }
   },
@@ -174,10 +189,12 @@ export const useRoomStore = create((set, get) => ({
   toggleMicTrack: (muted) => {
     const stream = get().localStream;
     if (stream) {
-      stream.getAudioTracks().forEach(track => {
+      stream.getAudioTracks().forEach((track) => {
         track.enabled = !muted;
       });
-      console.log(`Local microphone tracks ${muted ? 'disabled (muted)' : 'enabled (unmuted)'}`);
+      console.log(
+        `Local microphone tracks ${muted ? "disabled (muted)" : "enabled (unmuted)"}`,
+      );
     }
   },
 
@@ -186,11 +203,11 @@ export const useRoomStore = create((set, get) => ({
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       set({
-        availableInputDevices: devices.filter(d => d.kind === 'audioinput'),
-        availableOutputDevices: devices.filter(d => d.kind === 'audiooutput'),
+        availableInputDevices: devices.filter((d) => d.kind === "audioinput"),
+        availableOutputDevices: devices.filter((d) => d.kind === "audiooutput"),
       });
     } catch (err) {
-      console.warn('[Devices] enumerate failed:', err.message);
+      console.warn("[Devices] enumerate failed:", err.message);
     }
   },
 
@@ -204,7 +221,7 @@ export const useRoomStore = create((set, get) => ({
    */
   switchMicDevice: async (deviceId, currentMuted) => {
     try {
-      console.log('[Mic] Switching input device to:', deviceId);
+      console.log("[Mic] Switching input device to:", deviceId);
 
       const newStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -221,41 +238,46 @@ export const useRoomStore = create((set, get) => ({
       });
 
       const newTrack = newStream.getAudioTracks()[0];
-      if (!newTrack) throw new Error('No audio track in new stream');
+      if (!newTrack) throw new Error("No audio track in new stream");
 
       // Preserve current muted state
       newTrack.enabled = !currentMuted;
 
       // Replace track in every active peer connection (no renegotiation needed)
       const pcs = get().peerConnections;
-      const replacePromises = Object.entries(pcs).map(async ([socketId, pc]) => {
-        if (pc.signalingState === 'closed') return;
-        const sender = pc.getSenders().find(s => s.track?.kind === 'audio');
-        if (sender) {
-          try {
-            await sender.replaceTrack(newTrack);
-            console.log(`[Mic] Track replaced for peer: ${socketId}`);
-          } catch (err) {
-            console.warn(`[Mic] replaceTrack failed for ${socketId}:`, err.message);
+      const replacePromises = Object.entries(pcs).map(
+        async ([socketId, pc]) => {
+          if (pc.signalingState === "closed") return;
+          const sender = pc.getSenders().find((s) => s.track?.kind === "audio");
+          if (sender) {
+            try {
+              await sender.replaceTrack(newTrack);
+              console.log(`[Mic] Track replaced for peer: ${socketId}`);
+            } catch (err) {
+              console.warn(
+                `[Mic] replaceTrack failed for ${socketId}:`,
+                err.message,
+              );
+            }
           }
-        }
-      });
+        },
+      );
       await Promise.all(replacePromises);
 
       // Stop old stream tracks
       const oldStream = get().localStream;
       if (oldStream) {
-        oldStream.getAudioTracks().forEach(t => t.stop());
+        oldStream.getAudioTracks().forEach((t) => t.stop());
       }
 
       // Track the new device id in audio engine
       spatialAudioEngine.setCurrentInputDeviceId(deviceId);
 
       set({ localStream: newStream });
-      console.log('[Mic] Device switch complete');
+      console.log("[Mic] Device switch complete");
       return true;
     } catch (err) {
-      console.error('[Mic] switchMicDevice failed:', err.message);
+      console.error("[Mic] switchMicDevice failed:", err.message);
       return false;
     }
   },
@@ -264,25 +286,26 @@ export const useRoomStore = create((set, get) => ({
     const existingSocket = get().socket;
     if (existingSocket && existingSocket.connected) return;
 
-    const socket = io('/', {
+    const socket = io(import.meta.env.VITE_SOCKET_URL, {
       auth: { token },
+      transports: ["websocket"],
       autoConnect: true,
     });
 
-    socket.on('connect', () => {
-      console.log('Socket connected successfully with ID:', socket.id);
+    socket.on("connect", () => {
+      console.log("Socket connected successfully with ID:", socket.id);
     });
 
     // Listen for room users list
-    socket.on('room-users', (users) => {
+    socket.on("room-users", (users) => {
       set({ roomUsers: users });
-      
+
       // We are joining the room. Existing users in this list will initiate the connection with us.
       // We just need to sit back and wait for incoming offers.
     });
 
     // Listen for another user joining the room
-    socket.on('user-joined', ({ socketId, user }) => {
+    socket.on("user-joined", ({ socketId, user }) => {
       console.log(`User joined room: ${user.username} (${socketId})`);
       set((state) => ({
         roomUsers: {
@@ -296,16 +319,16 @@ export const useRoomStore = create((set, get) => ({
     });
 
     // Listen for incoming WebRTC signaling data
-    socket.on('receive-signal', ({ senderSocketId, signal }) => {
+    socket.on("receive-signal", ({ senderSocketId, signal }) => {
       get().handleIncomingSignal(senderSocketId, signal);
     });
 
     // Listen for another user moving
-    socket.on('user-moved', ({ socketId, x, y, rotation }) => {
+    socket.on("user-moved", ({ socketId, x, y, rotation }) => {
       set((state) => {
         const user = state.roomUsers[socketId];
         if (!user) return {};
-        
+
         // Update spatial audio engine positioning
         spatialAudioEngine.updatePeerPosition(socketId, x, y, rotation);
 
@@ -324,7 +347,7 @@ export const useRoomStore = create((set, get) => ({
     });
 
     // Listen for media state changes
-    socket.on('user-media-state-updated', ({ socketId, states }) => {
+    socket.on("user-media-state-updated", ({ socketId, states }) => {
       set((state) => {
         const user = state.roomUsers[socketId];
         if (!user) return {};
@@ -341,14 +364,14 @@ export const useRoomStore = create((set, get) => ({
     });
 
     // Listen for chat messages
-    socket.on('new-message', (message) => {
+    socket.on("new-message", (message) => {
       set((state) => ({
         chatMessages: [...state.chatMessages, message],
       }));
     });
 
     // Listen for another user leaving
-    socket.on('user-left', ({ socketId }) => {
+    socket.on("user-left", ({ socketId }) => {
       set((state) => {
         const updatedUsers = { ...state.roomUsers };
         delete updatedUsers[socketId];
@@ -360,26 +383,26 @@ export const useRoomStore = create((set, get) => ({
     });
 
     // Listen for screen share start
-    socket.on('screen-share-started', ({ socketId }) => {
+    socket.on("screen-share-started", ({ socketId }) => {
       console.log(`Peer started screen sharing: ${socketId}`);
       set({ screenShareOwnerSocketId: socketId });
     });
 
     // Listen for screen share stop
-    socket.on('screen-share-stopped', ({ socketId }) => {
+    socket.on("screen-share-stopped", ({ socketId }) => {
       console.log(`Peer stopped screen sharing: ${socketId}`);
       set((state) => {
         const screenStreams = { ...state.remoteScreenStreams };
         delete screenStreams[socketId];
         return {
           screenShareOwnerSocketId: null,
-          remoteScreenStreams: screenStreams
+          remoteScreenStreams: screenStreams,
         };
       });
     });
 
     // Listen for error notifications
-    socket.on('error-notification', ({ message }) => {
+    socket.on("error-notification", ({ message }) => {
       alert(message);
     });
 
@@ -411,17 +434,17 @@ export const useRoomStore = create((set, get) => ({
 
     spatialAudioEngine.close();
 
-    set({ 
-      socket: null, 
-      roomUsers: {}, 
-      chatMessages: [], 
-      localStream: null, 
-      peerConnections: {}, 
+    set({
+      socket: null,
+      roomUsers: {},
+      chatMessages: [],
+      localStream: null,
+      peerConnections: {},
       remoteStreams: {},
       localScreenStream: null,
       screenSenders: {},
       remoteScreenStreams: {},
-      screenShareOwnerSocketId: null
+      screenShareOwnerSocketId: null,
     });
   },
 
@@ -432,14 +455,14 @@ export const useRoomStore = create((set, get) => ({
     // Reset spatial audio engine context
     spatialAudioEngine.initAudioContext();
 
-    socket.emit('join-room', { roomId: room._id, x, y, rotation });
+    socket.emit("join-room", { roomId: room._id, x, y, rotation });
     set({ currentRoom: room, chatMessages: [] });
   },
 
   leaveRoom: () => {
     const socket = get().socket;
     if (socket) {
-      socket.emit('leave-room');
+      socket.emit("leave-room");
     }
 
     // Clean up active peers and remote streams
@@ -447,7 +470,13 @@ export const useRoomStore = create((set, get) => ({
       get().cleanupPeerConnection(socketId);
     });
 
-    set({ currentRoom: null, roomUsers: {}, chatMessages: [], peerConnections: {}, remoteStreams: {} });
+    set({
+      currentRoom: null,
+      roomUsers: {},
+      chatMessages: [],
+      peerConnections: {},
+      remoteStreams: {},
+    });
   },
 
   // WebRTC Peer Connection Core Logic
@@ -455,24 +484,26 @@ export const useRoomStore = create((set, get) => ({
     const existingPC = get().peerConnections[targetSocketId];
     if (existingPC) return existingPC;
 
-    console.log(`Creating RTCPeerConnection for target: ${targetSocketId} (Initiator: ${isInitiator})`);
-    
+    console.log(
+      `Creating RTCPeerConnection for target: ${targetSocketId} (Initiator: ${isInitiator})`,
+    );
+
     // Create connection with public Google STUN server
     const pc = new RTCPeerConnection({
       iceServers: [
         {
           urls: [
-            'stun:stun.l.google.com:19302',
-            'stun:stun1.l.google.com:19302',
-          ]
-        }
-      ]
+            "stun:stun.l.google.com:19302",
+            "stun:stun1.l.google.com:19302",
+          ],
+        },
+      ],
     });
 
     // Handle local ICE candidates
     pc.onicecandidate = (event) => {
       if (event.candidate && get().socket) {
-        get().socket.emit('send-signal', {
+        get().socket.emit("send-signal", {
           targetSocketId,
           signal: { candidate: event.candidate },
         });
@@ -483,8 +514,10 @@ export const useRoomStore = create((set, get) => ({
     pc.ontrack = (event) => {
       const remoteStream = event.streams[0];
 
-      if (event.track.kind === 'video') {
-        console.log(`Received remote screen sharing video track from peer: ${targetSocketId}`);
+      if (event.track.kind === "video") {
+        console.log(
+          `Received remote screen sharing video track from peer: ${targetSocketId}`,
+        );
         set((state) => ({
           remoteScreenStreams: {
             ...state.remoteScreenStreams,
@@ -492,7 +525,9 @@ export const useRoomStore = create((set, get) => ({
           },
         }));
       } else {
-        console.log(`Received remote audio track stream from peer: ${targetSocketId}`);
+        console.log(
+          `Received remote audio track stream from peer: ${targetSocketId}`,
+        );
         set((state) => ({
           remoteStreams: {
             ...state.remoteStreams,
@@ -502,18 +537,25 @@ export const useRoomStore = create((set, get) => ({
 
         // Route the stream through our Spatial Audio Engine
         spatialAudioEngine.setupSpatialNode(targetSocketId, remoteStream);
-        
+
         // Update panner node position immediately with whatever last position we have
         const peer = get().roomUsers[targetSocketId];
         if (peer) {
-          spatialAudioEngine.updatePeerPosition(targetSocketId, peer.x, peer.y, peer.rotation);
+          spatialAudioEngine.updatePeerPosition(
+            targetSocketId,
+            peer.x,
+            peer.y,
+            peer.rotation,
+          );
         }
       }
     };
 
     pc.onconnectionstatechange = () => {
-      console.log(`Connection state for ${targetSocketId}: ${pc.connectionState}`);
-      if (['disconnected', 'failed', 'closed'].includes(pc.connectionState)) {
+      console.log(
+        `Connection state for ${targetSocketId}: ${pc.connectionState}`,
+      );
+      if (["disconnected", "failed", "closed"].includes(pc.connectionState)) {
         get().cleanupPeerConnection(targetSocketId);
       }
     };
@@ -544,15 +586,18 @@ export const useRoomStore = create((set, get) => ({
       try {
         const offer = await pc.createOffer();
         const mungedSDP = preferStereoOpus(offer.sdp);
-        const mungedOffer = new RTCSessionDescription({ type: 'offer', sdp: mungedSDP });
+        const mungedOffer = new RTCSessionDescription({
+          type: "offer",
+          sdp: mungedSDP,
+        });
         await pc.setLocalDescription(mungedOffer);
         console.log(`Sending SDP offer to peer: ${targetSocketId}`);
-        get().socket.emit('send-signal', {
+        get().socket.emit("send-signal", {
           targetSocketId,
           signal: { sdp: mungedOffer },
         });
       } catch (err) {
-        console.error('Failed to create/send SDP offer:', err.message);
+        console.error("Failed to create/send SDP offer:", err.message);
       }
     }
 
@@ -572,16 +617,21 @@ export const useRoomStore = create((set, get) => ({
       if (signal.sdp) {
         const desc = new RTCSessionDescription(signal.sdp);
         await pc.setRemoteDescription(desc);
-        console.log(`Applied Remote Description type: ${desc.type} from: ${senderSocketId}`);
+        console.log(
+          `Applied Remote Description type: ${desc.type} from: ${senderSocketId}`,
+        );
 
         // If it's an offer, we must answer it
-        if (desc.type === 'offer') {
+        if (desc.type === "offer") {
           const answer = await pc.createAnswer();
           const mungedSDP = preferStereoOpus(answer.sdp);
-          const mungedAnswer = new RTCSessionDescription({ type: 'answer', sdp: mungedSDP });
+          const mungedAnswer = new RTCSessionDescription({
+            type: "answer",
+            sdp: mungedSDP,
+          });
           await pc.setLocalDescription(mungedAnswer);
           console.log(`Sending SDP answer to: ${senderSocketId}`);
-          get().socket.emit('send-signal', {
+          get().socket.emit("send-signal", {
             targetSocketId: senderSocketId,
             signal: { sdp: mungedAnswer },
           });
@@ -592,7 +642,10 @@ export const useRoomStore = create((set, get) => ({
         console.log(`Successfully added ICE candidate from: ${senderSocketId}`);
       }
     } catch (err) {
-      console.error(`Error handling WebRTC signal from ${senderSocketId}:`, err.message);
+      console.error(
+        `Error handling WebRTC signal from ${senderSocketId}:`,
+        err.message,
+      );
     }
   },
 
@@ -612,21 +665,24 @@ export const useRoomStore = create((set, get) => ({
       const streams = { ...state.remoteStreams };
       const screenStreams = { ...state.remoteScreenStreams };
       const senders = { ...state.screenSenders };
-      
+
       delete pcs[socketId];
       delete streams[socketId];
       delete screenStreams[socketId];
       delete senders[socketId];
-      
+
       // If the closed connection belonged to the screen share owner, reset it
-      const resetScreenOwner = state.screenShareOwnerSocketId === socketId ? null : state.screenShareOwnerSocketId;
-      
-      return { 
-        peerConnections: pcs, 
-        remoteStreams: streams, 
+      const resetScreenOwner =
+        state.screenShareOwnerSocketId === socketId
+          ? null
+          : state.screenShareOwnerSocketId;
+
+      return {
+        peerConnections: pcs,
+        remoteStreams: streams,
         remoteScreenStreams: screenStreams,
         screenSenders: senders,
-        screenShareOwnerSocketId: resetScreenOwner
+        screenShareOwnerSocketId: resetScreenOwner,
       };
     });
   },
@@ -635,13 +691,13 @@ export const useRoomStore = create((set, get) => ({
     const socket = get().socket;
     if (!socket) return;
 
-    socket.emit('move', { x, y, rotation });
-    
+    socket.emit("move", { x, y, rotation });
+
     // Update self locally
     set((state) => {
       const selfSocketId = socket.id;
       if (!selfSocketId || !state.roomUsers[selfSocketId]) return {};
-      
+
       // Update listener position inside spatial audio engine
       spatialAudioEngine.updateListener(x, y, rotation);
 
@@ -662,27 +718,27 @@ export const useRoomStore = create((set, get) => ({
   sendChatMessage: (text) => {
     const socket = get().socket;
     if (!socket) return;
-    socket.emit('send-message', text);
+    socket.emit("send-message", text);
   },
 
   sendDrawLine: (lineData) => {
     const socket = get().socket;
     if (socket) {
-      socket.emit('draw-line', lineData);
+      socket.emit("draw-line", lineData);
     }
   },
 
   sendClearWhiteboard: () => {
     const socket = get().socket;
     if (socket) {
-      socket.emit('clear-whiteboard');
+      socket.emit("clear-whiteboard");
     }
   },
 
   sendEmojiReaction: (emoji) => {
     const socket = get().socket;
     if (socket) {
-      socket.emit('emoji-reaction', emoji);
+      socket.emit("emoji-reaction", emoji);
     }
   },
 
@@ -690,7 +746,7 @@ export const useRoomStore = create((set, get) => ({
     const socket = get().socket;
     if (!socket) return;
 
-    socket.emit('update-media-state', states);
+    socket.emit("update-media-state", states);
 
     // Update self locally
     set((state) => {
@@ -714,13 +770,13 @@ export const useRoomStore = create((set, get) => ({
     if (!socket) return;
 
     try {
-      console.log('Requesting display media for screen share...');
+      console.log("Requesting display media for screen share...");
       const stream = await navigator.mediaDevices.getDisplayMedia({
         video: {
-          cursor: 'always',
-          frameRate: { ideal: 15, max: 30 }
+          cursor: "always",
+          frameRate: { ideal: 15, max: 30 },
         },
-        audio: false
+        audio: false,
       });
 
       const videoTrack = stream.getVideoTracks()[0];
@@ -728,24 +784,30 @@ export const useRoomStore = create((set, get) => ({
       // Add track to all active peer connections
       const senders = {};
       const pcs = get().peerConnections;
-      
+
       for (const [socketId, pc] of Object.entries(pcs)) {
-        if (pc.signalingState !== 'closed') {
+        if (pc.signalingState !== "closed") {
           try {
             const sender = pc.addTrack(videoTrack, stream);
             senders[socketId] = sender;
-            
+
             // Trigger WebRTC renegotiation
             const offer = await pc.createOffer();
             const mungedSDP = preferStereoOpus(offer.sdp);
-            const mungedOffer = new RTCSessionDescription({ type: 'offer', sdp: mungedSDP });
+            const mungedOffer = new RTCSessionDescription({
+              type: "offer",
+              sdp: mungedSDP,
+            });
             await pc.setLocalDescription(mungedOffer);
-            socket.emit('send-signal', {
+            socket.emit("send-signal", {
               targetSocketId: socketId,
-              signal: { sdp: mungedOffer }
+              signal: { sdp: mungedOffer },
             });
           } catch (err) {
-            console.error(`Failed to add video track to peer ${socketId}:`, err);
+            console.error(
+              `Failed to add video track to peer ${socketId}:`,
+              err,
+            );
           }
         }
       }
@@ -758,13 +820,13 @@ export const useRoomStore = create((set, get) => ({
       set({
         localScreenStream: stream,
         screenSenders: senders,
-        screenShareOwnerSocketId: socket.id
+        screenShareOwnerSocketId: socket.id,
       });
 
-      socket.emit('start-screen-share');
-      console.log('Screen sharing initialized successfully');
+      socket.emit("start-screen-share");
+      console.log("Screen sharing initialized successfully");
     } catch (err) {
-      console.error('Failed to get display media:', err.message);
+      console.error("Failed to get display media:", err.message);
     }
   },
 
@@ -773,9 +835,9 @@ export const useRoomStore = create((set, get) => ({
     if (!stream) return;
 
     const socket = get().socket;
-    
+
     // Stop all screen share tracks
-    stream.getTracks().forEach(track => track.stop());
+    stream.getTracks().forEach((track) => track.stop());
 
     // Remove video track from all peer connections
     const senders = get().screenSenders;
@@ -783,23 +845,29 @@ export const useRoomStore = create((set, get) => ({
 
     for (const [socketId, pc] of Object.entries(pcs)) {
       const sender = senders[socketId];
-      if (sender && pc.signalingState !== 'closed') {
+      if (sender && pc.signalingState !== "closed") {
         try {
           pc.removeTrack(sender);
-          
+
           // Renegotiate connections
           const offer = await pc.createOffer();
           const mungedSDP = preferStereoOpus(offer.sdp);
-          const mungedOffer = new RTCSessionDescription({ type: 'offer', sdp: mungedSDP });
+          const mungedOffer = new RTCSessionDescription({
+            type: "offer",
+            sdp: mungedSDP,
+          });
           await pc.setLocalDescription(mungedOffer);
           if (socket) {
-            socket.emit('send-signal', {
+            socket.emit("send-signal", {
               targetSocketId: socketId,
-              signal: { sdp: mungedOffer }
+              signal: { sdp: mungedOffer },
             });
           }
         } catch (err) {
-          console.error(`Failed to remove video track from peer ${socketId}:`, err);
+          console.error(
+            `Failed to remove video track from peer ${socketId}:`,
+            err,
+          );
         }
       }
     }
@@ -807,12 +875,12 @@ export const useRoomStore = create((set, get) => ({
     set({
       localScreenStream: null,
       screenSenders: {},
-      screenShareOwnerSocketId: null
+      screenShareOwnerSocketId: null,
     });
 
     if (socket) {
-      socket.emit('stop-screen-share');
+      socket.emit("stop-screen-share");
     }
-    console.log('Screen sharing stopped successfully');
+    console.log("Screen sharing stopped successfully");
   },
 }));

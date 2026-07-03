@@ -1,27 +1,30 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 export const useAuthStore = create((set, get) => ({
   user: null,
-  token: localStorage.getItem('token') || null,
+  token: localStorage.getItem("token") || null,
   loading: false,
   error: null,
 
   login: async (email, password) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/auth/login`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        },
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        throw new Error(data.message || "Login failed");
       }
 
-      localStorage.setItem('token', data.token);
+      localStorage.setItem("token", data.token);
       set({ user: data, token: data.token, loading: false });
       return true;
     } catch (error) {
@@ -33,19 +36,22 @@ export const useAuthStore = create((set, get) => ({
   register: async (username, email, password) => {
     set({ loading: true, error: null });
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, email, password }),
-      });
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/auth/register`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ username, email, password }),
+        },
+      );
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
+        throw new Error(data.message || "Registration failed");
       }
 
-      localStorage.setItem('token', data.token);
+      localStorage.setItem("token", data.token);
       set({ user: data, token: data.token, loading: false });
       return true;
     } catch (error) {
@@ -55,7 +61,7 @@ export const useAuthStore = create((set, get) => ({
   },
 
   logout: () => {
-    localStorage.removeItem('token');
+    localStorage.removeItem("token");
     set({ user: null, token: null });
   },
 
@@ -65,22 +71,25 @@ export const useAuthStore = create((set, get) => ({
 
     set({ loading: true });
     try {
-      const response = await fetch('/api/auth/profile', {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/api/auth/profile`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         },
-      });
+      );
 
       if (response.ok) {
         const data = await response.json();
         set({ user: { ...data, token }, loading: false });
       } else {
         // Token is invalid/expired
-        localStorage.removeItem('token');
+        localStorage.removeItem("token");
         set({ user: null, token: null, loading: false });
       }
     } catch (error) {
-      console.error('Failed to authenticate token:', error);
+      console.error("Failed to authenticate token:", error);
       set({ loading: false });
     }
   },

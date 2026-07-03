@@ -28,8 +28,36 @@ const app = express();
 const httpServer = createServer(app);
 
 // CORS configuration
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5000",
+];
+
+if (process.env.CLIENT_URL) {
+  // Normalize by removing trailing slash if present
+  allowedOrigins.push(process.env.CLIENT_URL.replace(/\/$/, ""));
+}
+
 const corsOptions = {
-  origin: process.env.CLIENT_URL || "http://localhost:5173",
+  origin: (origin, callback) => {
+    // Allow server-to-server or REST tools (curl, postman, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is explicitly in allowed list
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // Support Vercel domains dynamically for this project
+    const isVercelOrigin = origin.endsWith(".vercel.app") && 
+      (origin.includes("navin7856s-projects") || origin.includes("spatial-room"));
+      
+    if (isVercelOrigin) {
+      return callback(null, true);
+    }
+    
+    callback(null, false);
+  },
   credentials: true,
 };
 
